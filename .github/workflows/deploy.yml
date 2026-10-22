@@ -57,19 +57,19 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    env:
-      DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
-      DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
-      DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
-      GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      GHCR_USER: ${{ github.actor }}
-      TAG: ${{ github.sha }}
+    permissions:
+      contents: read
+      packages: read
     steps:
       - uses: actions/checkout@v4
       - name: Set up SSH
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
         run: |
           install -m 700 -d ~/.ssh
-          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/id_deploy
+          printf '%s\n' "$DEPLOY_SSH_KEY" | tr -d '' > ~/.ssh/id_deploy
           chmod 600 ~/.ssh/id_deploy
           ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
           cat > ~/.ssh/config <<CONF
@@ -84,11 +84,15 @@ jobs:
         run: |
           ssh deploy-target 'mkdir -p /opt/fitness2/backups'
           ssh deploy-target 'cat > /opt/fitness2/Caddyfile' < deploy/Caddyfile
-          ssh deploy-target 'cat > /opt/fitness2/docker-compose.yml' < deploy/docker-compose.prod.yml
-          ssh deploy-target 'cat > /opt/fitness2/deploy.sh' < deploy/deploy.sh
-          ssh deploy-target 'cat > /opt/fitness2/backup.sh' < deploy/backup.sh
+          ssh deploy-target 'cat > /opt/fitness2/docker-compose.yml.tmp && mv /opt/fitness2/docker-compose.yml.tmp /opt/fitness2/docker-compose.yml' < deploy/docker-compose.prod.yml
+          ssh deploy-target 'cat > /opt/fitness2/deploy.sh.tmp && mv /opt/fitness2/deploy.sh.tmp /opt/fitness2/deploy.sh' < deploy/deploy.sh
+          ssh deploy-target 'cat > /opt/fitness2/backup.sh.tmp && mv /opt/fitness2/backup.sh.tmp /opt/fitness2/backup.sh' < deploy/backup.sh
           ssh deploy-target 'chmod +x /opt/fitness2/deploy.sh /opt/fitness2/backup.sh'
       - name: Deploy
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GHCR_USER: ${{ github.actor }}
+          TAG: ${{ github.sha }}
         run: |
           # Client-side expansion of actor and sha is intended.
           # shellcheck disable=SC2029
