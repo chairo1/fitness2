@@ -41,7 +41,7 @@ cd /opt/fitness2
 docker compose stop api web
 docker compose exec -T db psql -U fitness -d postgres -c "DROP DATABASE IF EXISTS fitness WITH (FORCE);"
 docker compose exec -T db psql -U fitness -d postgres -c "CREATE DATABASE fitness OWNER fitness;"
-gunzip -c backups/fitness-2026-10-22.sql.gz | docker compose exec -T db psql -U fitness -d fitness
+gunzip -c backups/fitness-2026-10-22.sql.gz | docker compose exec -T db psql -v ON_ERROR_STOP=1 -U fitness -d fitness
 docker compose up -d
 ```
 

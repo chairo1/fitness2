@@ -2,6 +2,8 @@
 # Nightly Postgres backup. Cron (root):
 # 15 3 * * * /opt/fitness2/backup.sh >> /opt/fitness2/backups/backup.log 2>&1
 set -euo pipefail
+export PATH=/usr/local/bin:/usr/bin:/bin
+umask 077
 
 cd /opt/fitness2
 BACKUP_DIR=/opt/fitness2/backups
@@ -20,5 +22,7 @@ trap cleanup EXIT
 
 docker compose exec -T db pg_dump -U fitness fitness | gzip > "$OUT"
 
-find "$BACKUP_DIR" -name 'fitness-*.sql.gz' -type f -mtime +7 -delete
+trap - EXIT   # dump succeeded: never delete it because of later steps
+
+find "$BACKUP_DIR" -name 'fitness-*.sql.gz' -type f -mtime +7 -delete || echo "$(date -Is) retention cleanup failed"
 echo "$(date -Is) backup ok: $OUT ($(du -h "$OUT" | cut -f1))"

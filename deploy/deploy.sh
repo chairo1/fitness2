@@ -3,6 +3,7 @@
 set -euo pipefail
 
 TAG="${1:?usage: deploy.sh TAG}"
+[[ $TAG =~ ^[A-Za-z0-9._-]+$ ]] || { echo "invalid TAG: $TAG" >&2; exit 1; }
 cd /opt/fitness2
 
 [ -f .env ] || { echo ".env not found in /opt/fitness2" >&2; exit 1; }
@@ -21,9 +22,15 @@ WEB_HOST="$(grep -E '^WEB_HOST=' .env | tail -n1 | cut -d= -f2- | tr -d '\r "')"
 docker compose pull
 docker compose up -d --remove-orphans
 
+# A changed bind-mounted Caddyfile does not recreate the container: reload it.
+if ! docker compose exec -T caddy caddy reload --config /etc/caddy/Caddyfile; then
+  echo "caddy reload failed, restarting caddy" >&2
+  docker compose restart caddy
+fi
+
 echo "Waiting for https://${WEB_HOST}/api/health (max 90s)..."
 deadline=$((SECONDS + 90))
-until curl -fsS -o /dev/null "https://${WEB_HOST}/api/health"; do
+until curl -fsS --max-time 5 -o /dev/null "https://${WEB_HOST}/api/health"; do
   if [ "$SECONDS" -ge "$deadline" ]; then
     echo "Health check failed after 90s. Recent logs:" >&2
     docker compose logs --tail=100 >&2
@@ -33,4 +40,4 @@ until curl -fsS -o /dev/null "https://${WEB_HOST}/api/health"; do
 done
 
 echo "Deploy OK: ${TAG}"
-docker image prune -f
+docker image prune -f || true

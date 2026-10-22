@@ -57,7 +57,7 @@ cd /opt/fitness2
 
 The script sets `TAG` in `.env`, pulls images, runs `docker compose up -d`, waits up to 90 s for `https://fit2.chairops.online/api/health`, then prunes old images. If the check fails it prints the last 100 log lines and exits 1.
 
-If `Caddyfile` or `docker-compose.yml` changed, copy them to the server first (scp as above).
+If `Caddyfile` or `docker-compose.yml` changed, copy them to the server first (scp as above; CI does this on every deploy). `deploy.sh` then runs `caddy reload` (and `docker compose restart caddy` if reload fails), because a changed bind-mounted Caddyfile is not picked up otherwise. The TAG may only contain letters, digits, `.`, `_`, `-`.
 
 ## Roll back
 
