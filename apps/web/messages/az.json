@@ -1,0 +1,36 @@
+{
+  "Site": {
+    "name": "Fitness",
+    "tagline": "Məşqlərinizi izləyin.",
+    "register": "Qeydiyyat",
+    "login": "Daxil ol",
+    "cabinet": "Kabinet"
+  },
+  "Auth": {
+    "registerTitle": "Qeydiyyat",
+    "loginTitle": "Daxil ol",
+    "email": "E-poçt",
+    "password": "Şifrə",
+    "passwordHint": "Ən azı 8 simvol.",
+    "submitRegister": "Hesab yarat",
+    "submitLogin": "Daxil ol",
+    "haveAccount": "Hesabınız var?",
+    "noAccount": "Hesabınız yoxdur?",
+    "errors": {
+      "EMAIL_TAKEN": "Bu e-poçt artıq istifadə olunub.",
+      "INVALID_CREDENTIALS": "E-poçt və ya şifrə yanlışdır.",
+      "BLOCKED": "Hesab bloklanıb.",
+      "VALIDATION": "Məlumatları yoxlayın.",
+      "GENERIC": "Xəta baş verdi. Yenidən cəhd edin."
+    }
+  },
+  "Cabinet": {
+    "title": "Kabinet",
+    "signedInAs": "Hesab",
+    "logout": "Çıxış"
+  },
+  "NotFound": {
+    "title": "Səhifə tapılmadı",
+    "home": "Ana səhifə"
+  }
+}

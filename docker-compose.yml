@@ -34,5 +34,19 @@ services:
       db:
         condition: service_healthy
 
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    ports:
+      - '${WEB_PORT:-3001}:3000'
+    environment:
+      API_INTERNAL_URL: http://api:3000
+      ADMIN_HOST: ${ADMIN_HOST:-admin.localhost}
+    mem_limit: 256m
+    memswap_limit: 256m
+    depends_on:
+      - api
+
 volumes:
   pgdata:

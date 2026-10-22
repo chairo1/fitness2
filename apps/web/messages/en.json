@@ -1,0 +1,36 @@
+{
+  "Site": {
+    "name": "Fitness",
+    "tagline": "Track your workouts.",
+    "register": "Sign up",
+    "login": "Log in",
+    "cabinet": "Cabinet"
+  },
+  "Auth": {
+    "registerTitle": "Sign up",
+    "loginTitle": "Log in",
+    "email": "Email",
+    "password": "Password",
+    "passwordHint": "At least 8 characters.",
+    "submitRegister": "Create account",
+    "submitLogin": "Log in",
+    "haveAccount": "Have an account?",
+    "noAccount": "No account?",
+    "errors": {
+      "EMAIL_TAKEN": "This email is already in use.",
+      "INVALID_CREDENTIALS": "Wrong email or password.",
+      "BLOCKED": "This account is blocked.",
+      "VALIDATION": "Check the fields.",
+      "GENERIC": "Something went wrong. Try again."
+    }
+  },
+  "Cabinet": {
+    "title": "Cabinet",
+    "signedInAs": "Account",
+    "logout": "Log out"
+  },
+  "NotFound": {
+    "title": "Page not found",
+    "home": "Home"
+  }
+}
