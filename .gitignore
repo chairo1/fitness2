@@ -1,0 +1,11 @@
+node_modules/
+.superpowers/
+.env
+.env.*
+!.env.example
+.turbo/
+.next/
+dist/
+coverage/
+playwright-report/
+test-results/
