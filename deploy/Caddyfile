@@ -1,0 +1,26 @@
+# Both hosts: /api/* -> api, everything else -> web.
+# Host is preserved. X-Forwarded-Host is always overwritten with the real
+# Host so a client can never spoof the web/admin area.
+(app) {
+	encode zstd gzip
+
+	handle /api/* {
+		reverse_proxy api:3000 {
+			header_up X-Forwarded-Host {host}
+		}
+	}
+
+	handle {
+		reverse_proxy web:3000 {
+			header_up X-Forwarded-Host {host}
+		}
+	}
+}
+
+{$WEB_HOST} {
+	import app
+}
+
+{$ADMIN_HOST} {
+	import app
+}
