@@ -1,1 +1,2 @@
 *.sh text eol=lf
+apps/api/docker/* text eol=lf
