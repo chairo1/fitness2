@@ -1,0 +1,14 @@
+**/node_modules
+**/dist
+**/.turbo
+**/.next
+**/coverage
+.git
+.superpowers
+.env
+.env.*
+!.env.example
+docs
+*.md
+Dockerfile*
+docker-compose*.yml

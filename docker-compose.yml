@@ -15,5 +15,22 @@ services:
       timeout: 5s
       retries: 10
 
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    ports:
+      - '${API_PORT:-3000}:3000'
+    environment:
+      # Inside compose the API reaches Postgres at db:5432 (ignores the host DATABASE_URL in .env).
+      DATABASE_URL: postgresql://fitness:fitness@db:5432/fitness
+      JWT_SECRET: ${JWT_SECRET:-dev-only-jwt-secret-change-me-0123456789}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      THROTTLE_AUTH_LIMIT: ${THROTTLE_AUTH_LIMIT:-1000}
+      THROTTLE_AUTH_TTL_SEC: ${THROTTLE_AUTH_TTL_SEC:-900}
+    depends_on:
+      db:
+        condition: service_healthy
+
 volumes:
   pgdata:
