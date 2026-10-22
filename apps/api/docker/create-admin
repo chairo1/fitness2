@@ -1,0 +1,4 @@
+#!/bin/sh
+set -e
+. /app/bin/db-env.sh
+exec node "$DB/dist/src/create-admin.js" "$@"

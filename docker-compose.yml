@@ -28,6 +28,8 @@ services:
       COOKIE_SECURE: ${COOKIE_SECURE:-false}
       THROTTLE_AUTH_LIMIT: ${THROTTLE_AUTH_LIMIT:-1000}
       THROTTLE_AUTH_TTL_SEC: ${THROTTLE_AUTH_TTL_SEC:-900}
+    mem_limit: 256m
+    memswap_limit: 256m
     depends_on:
       db:
         condition: service_healthy
