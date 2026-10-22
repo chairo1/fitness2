@@ -98,7 +98,7 @@ cd /opt/fitness2
 ./deploy.sh <TAG>      # e.g. a git sha or v1.0.0
 ```
 
-The script sets `TAG` in `.env`, pulls images, runs `docker compose up -d`, waits up to 90 s for `https://fit2.chairops.online/api/health`, then prunes old images. If the check fails it prints the last 100 log lines and exits 1.
+The script sets `TAG` in `.env`, pulls images, runs `docker compose up -d`, waits up to 90 s for `https://fit2.chairops.online/api/health`, then checks `https://ADMIN_HOST/` answers non-5xx, then removes old images (keeps the current, previous and `latest` tags) and prunes dangling ones. If the check fails it prints the last 100 log lines and exits 1.
 
 If `Caddyfile` or `docker-compose.yml` changed and you deploy by hand, copy them to the server first with `cat > file` over ssh (CI does this on every deploy). `deploy.sh` then runs `caddy reload` (and `docker compose restart caddy` if reload fails), because a changed bind-mounted Caddyfile is not picked up otherwise. The TAG may only contain letters, digits, `.`, `_`, `-`.
 

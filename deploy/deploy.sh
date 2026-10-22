@@ -4,7 +4,7 @@ set -euo pipefail
 
 TAG="${1:?usage: deploy.sh TAG}"
 [[ $TAG =~ ^[A-Za-z0-9._-]+$ ]] || { echo "invalid TAG: $TAG" >&2; exit 1; }
-cd /opt/fitness2
+cd "${APP_DIR:-/opt/fitness2}"
 
 [ -f .env ] || { echo ".env not found in /opt/fitness2" >&2; exit 1; }
 
@@ -21,6 +21,8 @@ fi
 # Read WEB_HOST without sourcing the file.
 WEB_HOST="$(grep -E '^WEB_HOST=' .env | tail -n1 | cut -d= -f2- | tr -d '\r "')"
 [ -n "$WEB_HOST" ] || { echo "WEB_HOST missing in .env" >&2; exit 1; }
+ADMIN_HOST="$(grep -E '^ADMIN_HOST=' .env | tail -n1 | cut -d= -f2- | tr -d ' "')"
+[ -n "$ADMIN_HOST" ] || { echo "ADMIN_HOST missing in .env" >&2; exit 1; }
 
 docker compose pull
 docker compose up -d --remove-orphans
@@ -49,7 +51,7 @@ done
 
 # Admin host must answer too (any status below 500; the root may redirect).
 echo "Waiting for https://${ADMIN_HOST}/ to answer non-5xx (same 90s budget)..."
-until code="$(curl -sS --max-time 5 -o /dev/null -w '%{http_code}' "https://${ADMIN_HOST}/" || true)";   [[ $code =~ ^[1-4][0-9][0-9]$ ]]; do
+until code="$(curl -sS --max-time 5 -o /dev/null -w '%{http_code}' "https://${ADMIN_HOST}/" || true)"; [[ $code =~ ^[1-4][0-9][0-9]$ ]]; do
   if [ "$SECONDS" -ge "$deadline" ]; then
     echo "Admin host check failed (last status: ${code:-none}). Recent logs:" >&2
     docker compose logs --tail=100 >&2
