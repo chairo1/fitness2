@@ -7,8 +7,8 @@
   "scripts": {
     "build": "prisma generate && tsc -p tsconfig.build.json",
     "lint": "eslint .",
-    "typecheck": "prisma generate && tsc -p tsconfig.json --noEmit",
-    "test": "prisma generate && vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
     "migrate:dev": "dotenv -e ../../.env -- prisma migrate dev",
     "migrate:deploy": "dotenv -e ../../.env -- prisma migrate deploy",
     "seed": "dotenv -e ../../.env -- tsx prisma/seed.ts",
