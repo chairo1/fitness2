@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { normalizeEmail, registerSchema } from './auth';
+import { loginSchema, normalizeEmail, registerSchema } from './auth';
 
 describe('normalizeEmail', () => {
   it('trims and lowercases', () => {
@@ -13,5 +13,15 @@ describe('registerSchema', () => {
   });
   it('defaults locale to az', () => {
     expect(registerSchema.parse({ email: 'a@b.az', password: '12345678' }).locale).toBe('az');
+  });
+});
+
+describe('email normalization in schemas', () => {
+  it('registerSchema trims and lowercases the email', () => {
+    const r = registerSchema.parse({ email: ' Ali@Mail.com ', password: '12345678' });
+    expect(r.email).toBe('ali@mail.com');
+  });
+  it('loginSchema trims and lowercases the email', () => {
+    expect(loginSchema.parse({ email: ' Ali@Mail.com ', password: 'x' }).email).toBe('ali@mail.com');
   });
 });

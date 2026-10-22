@@ -13,11 +13,15 @@
   },
   "dependencies": {
     "@fit/db": "workspace:*",
+    "@fit/shared": "workspace:*",
     "@nestjs/common": "^11.0.0",
     "@nestjs/core": "^11.0.0",
     "@nestjs/platform-express": "^11.0.0",
+    "@nestjs/throttler": "^6.7.1",
     "@prisma/client": "^6.19.0",
+    "argon2": "^0.44.0",
     "cookie-parser": "^1.4.7",
+    "jsonwebtoken": "^9",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1"
   },
@@ -28,6 +32,7 @@
     "@types/cookie-parser": "^1.4.8",
     "@types/express": "^5.0.0",
     "@types/jest": "^29.5.14",
+    "@types/jsonwebtoken": "^9",
     "@types/node": "^22.0.0",
     "@types/supertest": "^6.0.2",
     "dotenv-cli": "^8.0.0",

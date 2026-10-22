@@ -4,6 +4,7 @@ export default {
   testRegex: 'test/.*[.]e2e-spec[.]ts$',
   moduleFileExtensions: ['js', 'json', 'ts'],
   testEnvironment: 'node',
+  setupFiles: ['<rootDir>/test/setup-env.ts'],
   transform: {
     '^.+[.]ts$': [
       '@swc/jest',
