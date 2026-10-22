@@ -30,4 +30,17 @@ describe('seed', () => {
     ).toBe('reps_weight');
     expect(await prisma.user.findUnique({ where: { email } })).not.toBeNull();
   });
+
+  it('does not overwrite admin edits on re-seed', async () => {
+    await seed(prisma);
+    await prisma.exercise.update({ where: { slug: 'plank' }, data: { nameAz: 'Edited' } });
+    await prisma.muscleGroup.update({ where: { slug: 'abs' }, data: { nameAz: 'EditedAbs' } });
+    await seed(prisma);
+    expect((await prisma.exercise.findUnique({ where: { slug: 'plank' } }))?.nameAz).toBe('Edited');
+    expect((await prisma.muscleGroup.findUnique({ where: { slug: 'abs' } }))?.nameAz).toBe(
+      'EditedAbs',
+    );
+    await prisma.exercise.update({ where: { slug: 'plank' }, data: { nameAz: 'Plank' } });
+    await prisma.muscleGroup.update({ where: { slug: 'abs' }, data: { nameAz: 'Qarın' } });
+  });
 });
