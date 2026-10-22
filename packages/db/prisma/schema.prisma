@@ -1,0 +1,239 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  user
+  admin
+}
+
+enum UserStatus {
+  active
+  blocked
+}
+
+enum Sex {
+  male
+  female
+}
+
+enum ActivityLevel {
+  sedentary
+  light
+  moderate
+  active
+  very_active
+}
+
+enum MeasureType {
+  reps_weight
+  reps
+  time
+}
+
+enum PlanStatus {
+  active
+  archived
+}
+
+enum BlockKind {
+  single
+  chain
+}
+
+enum Feel {
+  easy
+  normal
+  hard
+}
+
+model User {
+  id           String            @id @default(cuid())
+  email        String            @unique
+  passwordHash String
+  role         Role              @default(user)
+  locale       String            @default("az")
+  status       UserStatus        @default(active)
+  createdAt    DateTime          @default(now())
+  profile      Profile?
+  bodyWeights  BodyWeightEntry[]
+  weekPlans    WeekPlan[]
+  sessions     WorkoutSession[]
+}
+
+model Profile {
+  id             String        @id @default(cuid())
+  userId         String        @unique
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sex            Sex
+  birthDate      DateTime      @db.Date
+  heightCm       Int
+  activityLevel  ActivityLevel
+  defaultRestSec Int           @default(90)
+}
+
+model BodyWeightEntry {
+  id     String   @id @default(cuid())
+  userId String
+  user   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date   DateTime @db.Date
+  kg     Decimal  @db.Decimal(5, 2)
+
+  @@index([userId, date])
+}
+
+model MuscleGroup {
+  id        String           @id @default(cuid())
+  slug      String           @unique
+  nameAz    String
+  nameEn    String
+  mapId     String
+  exercises ExerciseMuscle[]
+  planDays  PlanDayMuscle[]
+}
+
+model Equipment {
+  id        String     @id @default(cuid())
+  slug      String     @unique
+  nameAz    String
+  nameEn    String
+  exercises Exercise[]
+}
+
+model Exercise {
+  id            String                 @id @default(cuid())
+  slug          String                 @unique
+  nameAz        String
+  nameEn        String
+  descriptionAz String?
+  descriptionEn String?
+  imageUrl      String?
+  measureType   MeasureType
+  equipmentId   String
+  equipment     Equipment              @relation(fields: [equipmentId], references: [id])
+  isCustomSeed  Boolean                @default(false)
+  muscles       ExerciseMuscle[]
+  planBlocks    PlanBlockExercise[]
+  sessionBlocks SessionBlockExercise[]
+  sets          SetEntry[]
+}
+
+model ExerciseMuscle {
+  id            String      @id @default(cuid())
+  exerciseId    String
+  exercise      Exercise    @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  muscleGroupId String
+  muscleGroup   MuscleGroup @relation(fields: [muscleGroupId], references: [id])
+  primary       Boolean
+
+  @@unique([exerciseId, muscleGroupId])
+}
+
+model WeekPlan {
+  id     String     @id @default(cuid())
+  userId String
+  user   User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status PlanStatus @default(active)
+  days   PlanDay[]
+
+  @@index([userId])
+}
+
+model PlanDay {
+  id         String           @id @default(cuid())
+  weekPlanId String
+  weekPlan   WeekPlan         @relation(fields: [weekPlanId], references: [id], onDelete: Cascade)
+  weekday    Int
+  isRest     Boolean          @default(false)
+  muscles    PlanDayMuscle[]
+  blocks     PlanBlock[]
+  sessions   WorkoutSession[]
+
+  @@unique([weekPlanId, weekday])
+}
+
+model PlanDayMuscle {
+  id            String      @id @default(cuid())
+  planDayId     String
+  planDay       PlanDay     @relation(fields: [planDayId], references: [id], onDelete: Cascade)
+  muscleGroupId String
+  muscleGroup   MuscleGroup @relation(fields: [muscleGroupId], references: [id])
+
+  @@unique([planDayId, muscleGroupId])
+}
+
+model PlanBlock {
+  id           String              @id @default(cuid())
+  planDayId    String
+  planDay      PlanDay             @relation(fields: [planDayId], references: [id], onDelete: Cascade)
+  order        Int
+  kind         BlockKind
+  intraRestSec Int                 @default(0)
+  restSec      Int                 @default(90)
+  exercises    PlanBlockExercise[]
+
+  @@index([planDayId, order])
+}
+
+model PlanBlockExercise {
+  id          String    @id @default(cuid())
+  planBlockId String
+  planBlock   PlanBlock @relation(fields: [planBlockId], references: [id], onDelete: Cascade)
+  exerciseId  String
+  exercise    Exercise  @relation(fields: [exerciseId], references: [id])
+  order       Int
+}
+
+model WorkoutSession {
+  id           String         @id @default(cuid())
+  userId       String
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  planDayId    String?
+  planDay      PlanDay?       @relation(fields: [planDayId], references: [id], onDelete: SetNull)
+  startedAt    DateTime
+  endedAt      DateTime?
+  kcalEstimate Int?
+  blocks       SessionBlock[]
+
+  @@index([userId, startedAt])
+}
+
+model SessionBlock {
+  id           String                 @id @default(cuid())
+  sessionId    String
+  session      WorkoutSession         @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  order        Int
+  kind         BlockKind
+  intraRestSec Int                    @default(0)
+  restSec      Int                    @default(90)
+  exercises    SessionBlockExercise[]
+  sets         SetEntry[]
+}
+
+model SessionBlockExercise {
+  id             String       @id @default(cuid())
+  sessionBlockId String
+  sessionBlock   SessionBlock @relation(fields: [sessionBlockId], references: [id], onDelete: Cascade)
+  exerciseId     String
+  exercise       Exercise     @relation(fields: [exerciseId], references: [id])
+  order          Int
+}
+
+model SetEntry {
+  id             String       @id @default(cuid())
+  sessionBlockId String
+  sessionBlock   SessionBlock @relation(fields: [sessionBlockId], references: [id], onDelete: Cascade)
+  exerciseId     String
+  exercise       Exercise     @relation(fields: [exerciseId], references: [id])
+  round          Int
+  reps           Int?
+  weightKg       Decimal?     @db.Decimal(5, 2)
+  durationSec    Int?
+  feel           Feel?
+  loggedAt       DateTime     @default(now())
+}
