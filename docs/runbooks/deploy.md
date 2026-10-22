@@ -87,6 +87,8 @@ cd /opt/fitness2
 docker compose exec api create-admin --email you@example.com --password 'LongPassword123'
 ```
 
+The password ends up in the shell history. Prefix the command with a space (works when `HISTCONTROL=ignorespace`/`ignoreboth`) or clear it afterwards with `history -c && history -w`.
+
 Login at `https://ad2.chairops.online`.
 
 ## Deploy a new version
