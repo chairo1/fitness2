@@ -69,6 +69,8 @@ describe('auth', () => {
     const res = await register().expect(201);
     expect(res.body).toMatchObject({ email: 'e2e-ali@mail.com', role: 'user', locale: 'az' });
     expect(res.body.passwordHash).toBeUndefined();
+    const row = await prisma.user.findUnique({ where: { email: 'e2e-ali@mail.com' } });
+    expect(row?.passwordHash).toContain('$m=19456,t=2,p=1$');
     const setCookie = (res.headers['set-cookie'] as unknown as string[]).join(';');
     expect(setCookie).toContain('fit_session=');
     expect(setCookie).toContain('HttpOnly');

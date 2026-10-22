@@ -5,7 +5,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import * as argon2 from 'argon2';
-import type { Role } from '@fit/db';
+import { hashPassword, type Role } from '@fit/db';
 import { normalizeEmail, type LoginInput, type RegisterInput } from '@fit/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { TokenService } from './token.service';
@@ -29,7 +29,7 @@ export class AuthService {
     const existing = await this.prisma.user.findUnique({ where: { email } });
     if (existing) throw new ConflictException({ code: 'EMAIL_TAKEN' });
 
-    const passwordHash = await argon2.hash(input.password, { type: argon2.argon2id });
+    const passwordHash = await hashPassword(input.password);
     try {
       const created = await this.prisma.user.create({
         data: { email, passwordHash, locale: input.locale },

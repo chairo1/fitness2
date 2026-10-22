@@ -32,7 +32,7 @@ RUN apk add --no-cache openssl libc6-compat
 ENV NODE_ENV=production PORT=3000 CHECKPOINT_DISABLE=1 PRISMA_HIDE_UPDATE_MESSAGE=1
 WORKDIR /app
 COPY --from=build --chown=node:node /out /app
-ENV PATH="/app/bin:$PATH"
+ENV PATH="/app/bin:$PATH" UV_THREADPOOL_SIZE=2
 USER node
 EXPOSE 3000
 HEALTHCHECK --interval=15s --timeout=5s --start-period=30s --retries=5 \

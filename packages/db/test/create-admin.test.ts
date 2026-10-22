@@ -17,7 +17,8 @@ describe('createAdmin', () => {
     const u = await createAdmin(prisma, ' Ali-Admin-Test@Mail.TEST ', 'secret123');
     expect(u.email).toBe('ali-admin-test@mail.test');
     expect(u.role).toBe('admin');
-    expect(u.passwordHash).toMatch(/^\$argon2/);
+    expect(u.passwordHash).toMatch(/^\$argon2id/);
+    expect(u.passwordHash).toContain('$m=19456,t=2,p=1$');
   });
 
   it('promotes an existing user, activates them and keeps their password', async () => {

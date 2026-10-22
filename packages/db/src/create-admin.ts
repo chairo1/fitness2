@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import * as argon2 from 'argon2';
+import { hashPassword } from './password';
 import { parseArgs } from 'node:util';
 
 export async function createAdmin(prisma: PrismaClient, rawEmail: string, password: string) {
@@ -9,7 +9,7 @@ export async function createAdmin(prisma: PrismaClient, rawEmail: string, passwo
   if (existing) {
     return prisma.user.update({ where: { email }, data: { role: 'admin', status: 'active' } });
   }
-  const passwordHash = await argon2.hash(password);
+  const passwordHash = await hashPassword(password);
   return prisma.user.create({ data: { email, passwordHash, role: 'admin' } });
 }
 
