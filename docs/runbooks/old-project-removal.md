@@ -25,10 +25,14 @@ ss -ltnp | grep -E ':80 |:443 '  -> docker-proxy listening on 80 and 443 (v4 and
 ```
 
 ## Archive commands
+Run on the SERVER (ssh root@206.189.185.233):
 ```
 docker exec fitness-db pg_dumpall -U fitness > /root/fitness-old-db.sql
 tar czf /root/fitness-old-files.tgz -C /opt fitness
-docker images; docker volume ls; docker ps -a   > old-docker-inventory.txt   (saved to the PC)
+docker images; docker volume ls; docker ps -a        # output saved to old-docker-inventory.txt on the PC (via ssh redirect)
+```
+Run from Git Bash on the PC:
+```
 scp root@206.189.185.233:/root/fitness-old-db.sql root@206.189.185.233:/root/fitness-old-files.tgz /c/Users/VICTUS/fitness-old-backup/
 ```
 The dump used `docker exec fitness-db` rather than the brief's `docker compose exec -T db` because the project uses two compose files
@@ -38,13 +42,13 @@ The dump used `docker exec fitness-db` rather than the brief's `docker compose e
 1. Server files: `ls -l /root/fitness-old-*` -> fitness-old-db.sql 23732, fitness-old-files.tgz 1731.
 2. Server hashes `sha256sum /root/fitness-old-*` -> 0433c80b...0195 (sql), 716d286b...d9f5 (tgz).
 3. `gzip -t /root/fitness-old-files.tgz && echo gzok` -> `gzok`.
-4. [gate time] Local `stat -c '%n %s' *` -> 23732 / 1731 / 1672 (sizes equal remote).
-5. [gate time] Local `sha256sum fitness-old-*` -> identical to server hashes above.
-6. [gate time] Local `gzip -t fitness-old-files.tgz` -> OK (`localgzok`).
-7. [gate time] `tar tzf fitness-old-files.tgz` ->
+4. [post-hoc re-run, values match gate] Local `stat -c '%n %s' *` -> 23732 / 1731 / 1672 (sizes equal remote).
+5. [post-hoc re-run, values match gate] Local `sha256sum fitness-old-*` -> identical to server hashes above.
+6. [post-hoc re-run, values match gate] Local `gzip -t fitness-old-files.tgz` -> OK (`localgzok`).
+7. [post-hoc re-run, values match gate] `tar tzf fitness-old-files.tgz` ->
    fitness/, fitness/docker-compose.yml, fitness/deploy/, **fitness/deploy/Caddyfile**, fitness/deploy/docker-compose.prod.yml, fitness/.env
-8. [gate time] `grep -c "CREATE TABLE" fitness-old-db.sql` -> 12 (required >= 12). Last dump line: `-- PostgreSQL database cluster dump complete`.
-Items 1-3 are as captured at the gate. For items 4-8 the checks were run at the gate; the exact values listed were re-run read-only on the local copy after the removal (post-hoc re-run) and are identical to the gate output (sizes, hashes and CREATE TABLE count matched; the tar listing and gzip result were the same).
+8. [post-hoc re-run, values match gate] `grep -c "CREATE TABLE" fitness-old-db.sql` -> 12 (required >= 12). Last dump line: `-- PostgreSQL database cluster dump complete`.
+Items 1-3 are as captured at the gate (server side, before deletion). Items 4-8 were checked at the gate, but the values listed were re-run read-only on the local copy after the removal and match what the gate showed.
 
 ## Removal
 Removed (and nothing else; no `docker system prune`):
@@ -60,27 +64,38 @@ After: `docker ps -a`, `docker volume ls`, `docker images` empty; `/opt` = conta
 `ss -ltnp | grep -E ':80 |:443 '` empty; `df -h /` (AFTER) -> 25G, 5.9G used, 19G avail, 25%.
 
 ## Restore
-Prereq: the app images `fitness-api:latest` and `fitness-web:latest` were deleted and are NOT in the archive (it has only the compose files, the Caddyfile and .env). They must be rebuilt or pulled from wherever the old project's source lives. Postgres and Caddy images are pulled automatically.
-The archived .env uses the key `DB_PASSWORD` (also DB_USER, DB_NAME, JWT_SECRET, ADMIN_*, APP_HOST, ADMIN_HOST; verified by listing key names only).
+Prereq: the app images `fitness-api:latest` and `fitness-web:latest` were deleted and are NOT in the archive (it has only the compose files, the Caddyfile and .env). They must be rebuilt or pulled from wherever the old project's source lives, and be present locally before step 4. Postgres and Caddy images are pulled automatically.
+The archived .env uses the key `DB_PASSWORD` (also DB_USER, DB_NAME, JWT_SECRET, ADMIN_*, APP_HOST, ADMIN_HOST; checked by listing key names only). The compose db service is named `db` (container `fitness-db`, volume `pgdata` -> `fitness_pgdata`).
 
-1. Copy back to the server. Run from Git Bash on the PC:
+1. Run from Git Bash on the PC:
    ```
    scp /c/Users/VICTUS/fitness-old-backup/fitness-old-files.tgz /c/Users/VICTUS/fitness-old-backup/fitness-old-db.sql root@206.189.185.233:/root/
    ```
-2. On the server, extract to /opt/fitness:
+2. On the server (bash):
    ```
+   set -euo pipefail
    tar xzf /root/fitness-old-files.tgz -C /opt        # creates /opt/fitness (.env, compose files, deploy/Caddyfile)
+   cd /opt/fitness
+   C="docker compose -p fitness -f docker-compose.yml -f deploy/docker-compose.prod.yml"
+
+   # (a) start only the database; Compose creates the labelled fitness_pgdata volume itself
+   $C up -d db
+
+   # (b) wait for Postgres, at most 30 tries x 2 s
+   ok=0
+   for i in $(seq 1 30); do
+     if docker exec fitness-db pg_isready -U fitness; then ok=1; break; fi
+     sleep 2
+   done
+   [ "$ok" = 1 ] || { echo "postgres not ready"; exit 1; }
+
+   # (c) load the dump
+   docker exec -i fitness-db psql -v ON_ERROR_STOP=0 -U fitness -d postgres < /root/fitness-old-db.sql
    ```
-3. Restore the database into the named volume with a temporary container, then remove the container (the volume stays):
+   Expected noise from (c): `ERROR: role "fitness" already exists` (and possibly that the database already exists). This is harmless.
+   Sanity check: `docker exec fitness-db psql -U fitness -d "$(grep ^DB_NAME= .env | cut -d= -f2-)" -c '\dt'` should list 12 tables.
+3. Start the rest of the stack (the app images must exist locally):
    ```
-   docker run -d --name fitness-db-restore -e POSTGRES_USER=fitness -e POSTGRES_PASSWORD="$(grep ^DB_PASSWORD= /opt/fitness/.env | cut -d= -f2-)" -v fitness_pgdata:/var/lib/postgresql/data postgres:16-alpine
-   until docker exec fitness-db-restore pg_isready -U fitness; do sleep 1; done
-   docker exec -i fitness-db-restore psql -U fitness -d postgres < /root/fitness-old-db.sql
-   docker rm -f fitness-db-restore
+   $C up -d
    ```
-   psql will report `ERROR: role "fitness" already exists` (and possibly that the fitness database exists); this is expected and harmless.
-   Note: with compose the volume is named `fitness_pgdata` because of `-p fitness`.
-4. Start the full stack (after the app images exist locally as `fitness-api:latest` and `fitness-web:latest`); it reuses the restored volume:
-   ```
-   cd /opt/fitness && docker compose -p fitness -f docker-compose.yml -f deploy/docker-compose.prod.yml up -d
-   ```
+   (run in the same shell session as step 2 so `$C` is set; otherwise spell out the full compose command.)
