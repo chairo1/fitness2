@@ -4,7 +4,8 @@
 (app) {
 	encode zstd gzip
 
-	handle /api/* {
+	@api path /api /api/*
+	handle @api {
 		reverse_proxy api:3000 {
 			header_up X-Forwarded-Host {host}
 		}

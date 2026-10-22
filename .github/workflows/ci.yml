@@ -46,3 +46,8 @@ jobs:
       - run: pnpm --filter @fit/db migrate:deploy
       - run: pnpm turbo run lint typecheck test
       - run: pnpm --filter api test:e2e
+      - name: Validate Caddyfile
+        run: |
+          docker run --rm -v "$PWD/deploy/Caddyfile:/etc/caddy/Caddyfile:ro" \
+            -e WEB_HOST=a.test -e ADMIN_HOST=b.test \
+            caddy:2-alpine caddy validate --config /etc/caddy/Caddyfile
